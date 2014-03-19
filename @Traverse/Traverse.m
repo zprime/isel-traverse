@@ -73,6 +73,11 @@ classdef Traverse < hgsetget
     end
     function set.blockingMode( this, value )
       assert( any( strcmpi( value, {'gui', 'cmd', 'none'} ) ), 'BlockingMode must be one of gui, cmd, or none' );
+      ss = get(0,'ScreenSize');
+      if isequal( ss(3:4), [1 1] )
+        warning('Traverse:SetblockingMode:NoScreen','Can not use gui blocking when there is no display. Changing to ''cmd''.');
+        value = 'cmd';
+      end
       this.blockingMode = value;
     end
     function set.resolution( this, value )
