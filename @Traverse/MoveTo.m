@@ -9,7 +9,7 @@
 %                 fraction of maximum speed for each channel. If omitted,
 %                 defaults to 0.5.
 %
-% v0.1.0 2014-03-18
+% v0.1.1 2014-03-21
 %
 % Copyright (c) 2014, Zebb Prime and The University of Adelaide
 % Licence appended to source
@@ -19,10 +19,10 @@ function MoveTo( tro, p, s )
 
 % Check the input arguments
 narginchk(2,3);
-assert( isconnected(tro), 'Traverse object must be connected to move.');
+%assert( isconnected(tro), 'Traverse object must be connected to move.');
 assert( isnumeric(p) && isreal(p) && all(isfinite(p)) && numel(p)==3,'Position must be a numeric, real, finite vector with 3 values');
 if nargin>=3
-  assert( isnumeric(s) && isreal(s) && all(isfinite(s)) && any(numel(s)==[1 3]) && s>0 && s<=1,'Second parameter must be single fraction of maximum speed, or a vector of fractions of maximum speed.');
+  assert( isnumeric(s) && isreal(s) && all(isfinite(s)) && isscalar(s) && s>=0 && s<=1,'Second parameter must be single fraction of maximum speed.');
 else
   s = 0.5;
 end
@@ -31,23 +31,24 @@ end
 assert( ~isempty( tro.resolution ), 'Traverse resolution has not been set' );
 assert( ~isempty( tro.maxV ), 'Maximum velocity has not been set' );
 
-% Get the current traverse position, so that speeds can be estimated
-P = position( tro );
+% In 3D interpolation mode, the speed is set by the X speed
+V = [ max( min( round( s.*min( tro.maxV(:).*tro.resolution(:) ) ), 10000 ), 30 ); 30; 30 ];
 
-% Calculate the movement time
-t = max( abs( p(:) - P(:) ) ./ tro.maxV(:) ./ s );
-if tro.verbose; fprintf(1,'Traverse movement will take approx %.1fs.\n',t); end;
-assert( isfinite(t) && t>0 && numel(t)==1, 'Something has gone wrong with t.' );
+% Calculate movement time
+if tro.verbose
+  P = Position( tro );
+  t = max( abs( p(:) - P(:) ) .* tro.resolution(:) ./ V(1) );
+  fprintf(1,'Traverse movement will take approx %.1fs.\n',t);
+end
 
-% Calculate velocity and position in Hz and points
-V = max( min( floor( tro.resolution(:) .* p(:) ./ t ), 10000 ), 30 );
-X = max( min( floor( tro.resolution(:) .* p(:) ), 2^23-1 ), -2^23 );
+% Movement destination in points
+X = max( min( round( tro.resolution(:) .* p(:) ), 2^23-1 ), -2^23 );
 
 % Generate the command string
-cmd = sprintf(1,'M %.0f,%.0f,%.0f,%.0f,%.0f,%.0f,0,30',[X.';V.']);
+cmd = sprintf('M %.0f,%.0f,%.0f,%.0f,%.0f,%.0f,0,30',[X.';V.']);
 
 % Actually do the movement
-prvBlockCmd( tro, cmd );
+%prvBlockCmd( tro, cmd );
 
 %{
 Copyright (c) 2014, Zebb Prime and The University of Adelaide

@@ -11,7 +11,7 @@
 % 'baud' | Baud rate to connect at. If none specified, the code enumerates
 %        |  over valid baud rates.
 %
-% v0.1.0 2014-03-18
+% v0.1.1 2014-03-21
 %
 % Copyright (c) 2014, Zebb Prime and The University of Adelaide
 % Licence appended to source
@@ -19,7 +19,7 @@ function Connect( tro, varargin )
 
 %% Parse the inputs
 ip = inputParser;
-ip.addRequired( 'tro', @(x) isa(x,'traverse') );
+ip.addRequired( 'tro', @(x) isa(x,'Traverse') );
 ip.addParamValue( 'port', [], @ischar );
 ip.addParamValue( 'baud', [], @ischar );
 ip.parse( tro, varargin{:} );
@@ -45,7 +45,7 @@ end
 
 %% Iterate over the ports and baud rates until a valid port is found
 % Default port settings
-sp = serial( 'dummy', 'terminator', 'CR/LF', 'InputBufferSize', 2048, 'Timeout', 1, 'BytesAvailableFcnMode', 'Terminator' );
+sp = serial( 'dummy', 'terminator', 'CR', 'InputBufferSize', 2048, 'Timeout', 1, 'BytesAvailableFcnMode', 'byte', 'BytesAvailableFcnCount', 1 );
 
 [Ip,Ib] = meshgrid( 1:numel(ports), 1:numel(bauds) );
 isvalid = false;
@@ -80,6 +80,8 @@ for ii=1:numel(Ip)
       elseif regexp( retst, 'iMC-S8' )
         tro.resolution = [320 320 320];
         tro.maxV = [25 25 25];
+        fprintf( sp, '@07\n' );
+        assert( char(fread(sp,1))=='0', 'Failed to initialise traverse' );
       else
         tro.resolution = [];
         tro.maxV = [];
@@ -101,9 +103,9 @@ if ~isvalid
   error('traverse:connect:UnableToConnect','Unable to connect to an isel controlled traverse.');
 end
 
-%% Put the traverse in CR/LF mode (send CR/LF after each transmitted value)
-fprintf( sp, '@0C1\n' );
-assert( strcmpi( fgetl(sp), '0' ), 'Failed to set traverse in CR/LF mode' );
+%% Put it into 3D interpolation mode
+fprintf( sp, '@0z1\n' );
+assert( char(fread(sp,1))=='0', 'Unable to set 3D interpolation mode');
 
 %% Set up the callback
 set( sp, 'BytesAvailableFcn', {@spBytesAvailableFcnCB,tro} );
@@ -129,7 +131,7 @@ function spBytesAvailableFcnCB( obj, ~, tro )
   tro.waiting = false;
   
   % Now lets look at the data to see what happened
-  st = fgetl( obj );
+  st = char( fread( obj, 1 ) );
   if tro.verbose; fprintf(1,'isel returned: %s\n',st); fprintf(1,'%i ',uint8(st)); fprintf(1,'\n'); end;
   
   % Expected only 1 character during normal operation

@@ -1,51 +1,19 @@
-% Perform a relative traverse movement
+% Initialise the traverse
 %
-% Move( tro, p, s )
+% Initialise( T )
 %
-% INPUTS:
-%  tro - Traverse object
-%  p - [3x1] Distance to move to in mm
-%  s (optional) - if scalar, fraction of maximum speed. If [3x1], the
-%                 fraction of maximum speed for each channel. If omitted,
-%                 defaults to 0.5.
-%
-% v0.1.1 2014-03-21
+% v0.1.1 2014-03-20
 %
 % Copyright (c) 2014, Zebb Prime and The University of Adelaide
 % Licence appended to source
 %
-% See also Traverse/MoveTo
-function Move( tro, p, s )
-
-% Check the input arguments
-narginchk(2,3);
-assert( isconnected(tro), 'Traverse object must be connected to move.');
-assert( isnumeric(p) && isreal(p) && all(isfinite(p)) && numel(p)==3,'Position must be a numeric, real, finite vector with 3 values');
-if nargin>=3
-  assert( isnumeric(s) && isreal(s) && all(isfinite(s)) && isscalar(s) && s>=0 && s<=1,'Second parameter must be single fraction of maximum speed.');
-else
-  s = 0.5;
+% See also Traverse/ReturnToReference
+function Initialise( tro )
+  % Make sure the traverse is connected
+  assert( isconnected(tro), 'Traverse must be connected.' );
+  % Return to reference, all three axes
+  prvBlockCmd( tro, '7' );
 end
-
-% Check the traverse object properties
-assert( ~isempty( tro.resolution ), 'Traverse resolution has not been set' );
-assert( ~isempty( tro.maxV ), 'Maximum velocity has not been set' );
-
-% In 3D interpolation mode, the speed is set by the X speed
-V = [ max( min( round( s.*min( tro.maxV(:).*tro.resolution(:) ) ), 10000 ), 30 ); 30; 30 ];
-
-% Calculate movement time
-t = max( abs( p(:) .* tro.resolution(:) ) ./ V(1) );
-if tro.verbose; fprintf(1,'Traverse movement will take approx %.1fs.\n',t); end;
-
-% Movement distance in points
-X = max( min( round( tro.resolution(:) .* p(:) ), 2^23-1 ), -2^23 );
-
-% Generate the command string
-cmd = sprintf('A %.0f,%.0f,%.0f,%.0f,%.0f,%.0f,0,30',[X.';V.']);
-
-% Actually do the movement
-prvBlockCmd( tro, cmd );
 
 %{
 Copyright (c) 2014, Zebb Prime and The University of Adelaide

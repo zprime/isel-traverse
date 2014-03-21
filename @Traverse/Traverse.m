@@ -63,7 +63,7 @@ classdef Traverse < hgsetget
     
     % Destructor method
     function delete( this )
-      disconnect( this );
+      Disconnect( this );
     end
     
     % Property set methods (validity checking of setting properties)
@@ -158,7 +158,7 @@ classdef Traverse < hgsetget
     MoveTo( tro, p, s );
     Start( tro );
     Abort( tro );
-    Position( tro );
+    P = Position( tro );
     SetZero( tro );
     end % of methods
   

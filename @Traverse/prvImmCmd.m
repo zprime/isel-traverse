@@ -10,16 +10,16 @@ function str = prvImmCmd( tro, cmd )
 
 %% Disable the callback
 cbf = get( tro.sp, 'BytesAvailableFcn' );
-set( tro.sp, 'BytesAvailableFcn', [] );
+set( tro.sp, 'BytesAvailableFcn', '' );
 
 %% Make sure the Timeout is reasonable
 set( tro.sp, 'Timeout', 1 );
 
 %% Send the command
-if tro.verbose; fprintf( 1, 'Sending command (expecting immediate response): @0%s', cmd ); end;
-fprintf( tro.sp, '@0%s', cmd );
+if tro.verbose; fprintf( 1, 'Sending command (expecting immediate response): @0%s.\n', cmd ); end;
+fprintf( tro.sp, '@0%s\n', cmd );
 
-st = fgetl( tro.sp );
+st = char( fread( tro.sp, 1 ) );
 errmsg = prvErrorMessages( tro );
 % Look up the return value in the error message table
 I = strcmp( st, errmsg(:,1) );
@@ -34,8 +34,8 @@ end
 
 % Wait for the reply, which should be immediate
 str = [];
-while tro.sp.BytesAvailable > 0
-  str = strcat( str, fgets( tro.sp ) );
+if tro.sp.BytesAvailable > 0
+  str = char( fread( tro.sp, tro.sp.BytesAvailable ).' );
 end
 if tro.verbose; fprintf( 1, 'Received status character %s, and string: ''%s''\n', st, str ); end;
 
