@@ -77,6 +77,10 @@ for ii=1:numel(Ip)
       if regexp( retst, 'Interfacekarte' )
         tro.resolution = [160 160 160];
         tro.maxV = [25 25 25];
+        pause(3);
+        dump = char( fread(sp,sp.BytesAvailable).' );
+        fprintf( sp, '@07\n' );
+        assert( char(fread(sp,1))=='0', 'Failed to initialise traverse' );
       elseif regexp( retst, 'iMC-S8' )
         tro.resolution = [320 320 320];
         tro.maxV = [25 25 25];

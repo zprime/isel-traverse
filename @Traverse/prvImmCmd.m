@@ -20,6 +20,8 @@ if tro.verbose; fprintf( 1, 'Sending command (expecting immediate response): @0%
 fprintf( tro.sp, '@0%s\n', cmd );
 
 st = char( fread( tro.sp, 1 ) );
+% Small delay to allow any other comms to finish.
+pause(0.1);
 errmsg = prvErrorMessages( tro );
 % Look up the return value in the error message table
 I = strcmp( st, errmsg(:,1) );

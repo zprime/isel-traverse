@@ -19,7 +19,7 @@ function MoveTo( tro, p, s )
 
 % Check the input arguments
 narginchk(2,3);
-%assert( isconnected(tro), 'Traverse object must be connected to move.');
+assert( isconnected(tro), 'Traverse object must be connected to move.');
 assert( isnumeric(p) && isreal(p) && all(isfinite(p)) && numel(p)==3,'Position must be a numeric, real, finite vector with 3 values');
 if nargin>=3
   assert( isnumeric(s) && isreal(s) && all(isfinite(s)) && isscalar(s) && s>=0 && s<=1,'Second parameter must be single fraction of maximum speed.');
@@ -48,7 +48,7 @@ X = max( min( round( tro.resolution(:) .* p(:) ), 2^23-1 ), -2^23 );
 cmd = sprintf('M %.0f,%.0f,%.0f,%.0f,%.0f,%.0f,0,30',[X.';V.']);
 
 % Actually do the movement
-%prvBlockCmd( tro, cmd );
+prvBlockCmd( tro, cmd );
 
 %{
 Copyright (c) 2014, Zebb Prime and The University of Adelaide
