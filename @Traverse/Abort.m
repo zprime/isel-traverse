@@ -2,21 +2,21 @@
 %
 % This command should be used primarily to abort a user-stopped movement.
 %
-% v0.1.0 2014-03-18
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015 Zebb Prime
 % Licence appended to source
 %
 % see also Traverse/Start
 function Abort( tro )
   % Make sure the traverse is connected
-  assert( isconnected(tro), 'Traverse must be connected.');
+  movevalid( tro );
   % Write the abort byte char(255)
   fwrite( tro.sp, uint8([255 13 10]) );
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

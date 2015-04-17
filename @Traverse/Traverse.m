@@ -1,4 +1,4 @@
-% Control the 3D isel controlled traverses in the AWT and Thebarton
+% Control traverses using isel controllers
 %
 % Traverse is implemented as a Matlab object with auto-finding of the
 % traverse, high-level commands and execution blocking with an option to
@@ -7,8 +7,9 @@
 % Basic example:
 % T = Traverse;
 % Connect( T );
-% ReturnToReference( T );   % Required for the Thebarton traverse
-% Move( T, [100 50 75] );
+% set( T, 'resolution', [80 80 160], 'maxV', [40 40 25] );
+% ReturnToReference( T );
+% MoveTo( T, [100 50 75] );
 %
 % Traverse properties:
 % blockingMode - {'gui','cmd','none'} - default is gui. This changes the
@@ -23,10 +24,19 @@
 %                 is autodetected for the AWT and Theb. traverses.
 % maxV         - 3 element vector of the maximum velocity of the traverse
 %                 in mm/s. Autodetected for AWT and Theb. traverses.
+% interp3D     - Scalar logical, defaults to true for devices that support
+%                 it. True puts the controller in 3D interpolation mode
+%                 (if supported by the device).  In 3D interpolation mode,
+%                 all three axes move at the same time.  In 2D mode 
+%                 (interp3D=false), the two axes in interp2Daxes move at
+%                 the same time, followed by the third axis.
+% interp2Daxes - {'XY','XZ','YZ'} - default is XY. When interp3D is false,
+%                 (2D interp mode), these two axes will move first,
+%                 followed by the third axis.
 %
-% v0.1.0 2014-03-18
+% v0.1.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 %
 % see also Traverse/Connect Traverse/Disconnect Traverse/ReturnToReference
@@ -47,6 +57,8 @@ classdef Traverse < hgsetget
     blockingMode = 'gui';
     resolution = [];
     maxV = [];
+    interp3D = false;
+    interp2Daxes = 'XY';
   end
   
   methods
@@ -80,6 +92,7 @@ classdef Traverse < hgsetget
       end
       this.blockingMode = value;
     end
+    % Sanity check resolution setting
     function set.resolution( this, value )
       assert( isnumeric(value) && isreal(value), 'Resolution must be real and numeric.' );
       assert( numel(value)==3, 'Resolution must have 3 elements.' );
@@ -88,12 +101,51 @@ classdef Traverse < hgsetget
       assert( all(mod(value,1)==0), 'Resolution must be integers.' );
       this.resolution = value;
     end
+    % Sanity check maximum velocity setting
     function set.maxV( this, value )
       assert( isnumeric(value) && isreal(value), 'Maximum velocity must be real and numeric.' );
       assert( numel(value)==3, 'Maximum velocity must have 3 elements.' );
       assert( all(value>0), 'Maximum velocity must be positive.' );
       assert( all(isfinite(value)), 'Maximum velocity must be finite.' );
       this.maxV = value;
+    end
+    % Sanity check, and see if device supports, 3D interp mode setting
+    function set.interp3D( this, value )
+      assert( islogical(value) && isscalar(value), 'Interp3D must be a logical scalar' );
+      assert( isconnected( this ), 'Traverse must be connected.' );
+      try
+        if value
+          prvImmCmd( this, 'z1' );
+          this.interp3D = true;
+        else
+          prvImmCmd( this, 'z0' );
+          this.interp3D = false;
+        end
+      catch
+        error('Traverse:interp3D:unable','Unable to change 3D interpolation mode');
+      end
+    end
+    % Sanith check and set the two axes for 2D interpolation
+    function set.interp2Daxes( this, value )
+      assert( ischar( value ), '2D interpolation mode must be a string' );
+      assert( any( strcmpi( value, {'xy','xz','yz'} ) ), '2D interpolation axes must be one of ''XY'', ''XZ'', or ''YZ''.' );
+      try
+        if strcmpi( value, 'xy' )
+          prvImmCmd( this, 'e0' );
+          this.interp2Daxes = 'XY';
+        elseif strcmpi( value, 'xz' )
+          prvImmCmd( this, 'e1' );
+          this.interp2Daxes = 'XZ';
+        elseif strcmpi( value, 'yz' )
+          prvImmCmd(this, 'e2' );
+          this.interp2Daxes = 'YZ';
+        else
+          error('Traverse:interp2Daxes:snbi','How did you manage to get this error?');
+        end
+      catch err
+        if this.verbose; fprintf(1,'Error: %s\n%s\n',err.identifier,err.message'); end
+        error('Traverse:Interp2DAxes:CantSet','Error setting the 2D interpolation axes');
+      end
     end
     
     % Save method. Prevent saving of an open serial port
@@ -103,6 +155,15 @@ classdef Traverse < hgsetget
         Disconnect( this );
       end
       b = this;
+    end
+    
+    % Test whether the traverse is set up enough to perform a movement
+    function movevalid( this )
+      assert( isconnected( this ), 'Traverse must be connected.' );
+      assert( ~isempty( this.maxV ) && ~isempty( this.resolution ), ...
+          'Resolution and Max Velocity have not been set.' );
+      assert( ~isempty( this.resolution ), 'Resolution has not been set.' );
+      assert( ~isempty( this.maxV ), 'Max velocity has not been set.' );
     end
     
     % Test whether the traverse is connected
@@ -144,6 +205,12 @@ classdef Traverse < hgsetget
       else
         fprintf(1,'Maximum axis velocities not autodetected or set.\n');
       end
+      % Interpolation mode
+      if this.interp3D
+        fprintf(1,'3D interpolation is on.\n');
+      else
+        fprintf(1,'2D interpolation on axes %s.\n',this.interp2Daxes);
+      end
       if this.verbose
         fprintf(1,'Verbose mode is on.\n');
       end
@@ -174,7 +241,7 @@ classdef Traverse < hgsetget
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

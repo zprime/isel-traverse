@@ -1,8 +1,8 @@
 % Private function. Return a table of error messages
 %
-% v0.1.0 2014-03-18
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 function errmsg = prvErrorMessages( ~ )
 % Error message table
@@ -30,7 +30,7 @@ function errmsg = prvErrorMessages( ~ )
   };
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -2,21 +2,30 @@
 %
 % ReturnToReference( T )
 %
-% v0.1.0 2014-03-18
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 %
 % See also Traverse/MoveTo Traverse/Move Traverse/Position
 function ReturnToReference( tro )
   % Make sure the traverse is connected
-  assert( isconnected(tro), 'Traverse must be connected.' );
+  movevalid( tro );
+  % Set the reference approch speed to 10% of max V
+  speed = max( min( round( 0.1 .* tro.maxV .* tro.resolution ), 10000 ), 30 );
+  cmd = sprintf( 'd%.0f,%.0f,%.0f', speed );
+  prvImmCmd( tro, cmd );
   % Return to reference, all three axes
   prvBlockCmd( tro, 'R7' );
+  % Put back in 3D interp mode (if possible)
+  try
+    tro.interp3D = true;
+  catch
+  end
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

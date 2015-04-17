@@ -9,9 +9,9 @@
 %                 fraction of maximum speed for each channel. If omitted,
 %                 defaults to 0.5.
 %
-% v0.1.1 2014-03-21
+% v0.2.0 2015-03-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 %
 % See also Traverse/Move
@@ -19,7 +19,7 @@ function MoveTo( tro, p, s )
 
 % Check the input arguments
 narginchk(2,3);
-assert( isconnected(tro), 'Traverse object must be connected to move.');
+movevalid( tro );
 assert( isnumeric(p) && isreal(p) && all(isfinite(p)) && numel(p)==3,'Position must be a numeric, real, finite vector with 3 values');
 if nargin>=3
   assert( isnumeric(s) && isreal(s) && all(isfinite(s)) && isscalar(s) && s>=0 && s<=1,'Second parameter must be single fraction of maximum speed.');
@@ -27,19 +27,50 @@ else
   s = 0.5;
 end
 
-% Check the traverse object properties
-assert( ~isempty( tro.resolution ), 'Traverse resolution has not been set' );
-assert( ~isempty( tro.maxV ), 'Maximum velocity has not been set' );
+% Distance to travel
+P = tro.Position();
+D = abs( ( p(:) - P(:) ).*tro.resolution(:) );
 
-% In 3D interpolation mode, the speed is set by the X speed
-V = [ max( min( round( s.*min( tro.maxV(:).*tro.resolution(:) ) ), 10000 ), 30 ); 30; 30 ];
+% Velocities, as a fraction of required fraction
+V = s.*( tro.maxV(:).*tro.resolution(:) );
 
-% Calculate movement time
-if tro.verbose
-  P = Position( tro );
-  t = max( abs( p(:) - P(:) ) .* tro.resolution(:) ./ V(1) );
-  fprintf(1,'Traverse movement will take approx %.1fs.\n',t);
+% Indicies of which axes will move when
+if tro.interp3D
+  I1 = [1 2 3];
+  I2 = [];
+else
+  switch lower( tro.interp2Daxes )
+    case 'xy'
+      I1 = [1 2];
+      I2 = 3;
+    case 'xz'
+      I1 = [1 3];
+      I2 = 2;
+    case 'yz'
+      I1 = [2 3];
+      I2 = 1;
+  end
 end
+
+% First movement
+V1 = V(I1);
+[Dm,Im] = max( D(I1) );
+t1 = Dm./V1(Im);
+V1 = D(I1)./t1;
+V(I1) = V1;
+
+% Second movement
+if ~isempty( I2 )
+  t2 = D(I2)./V(I2);
+else
+  t2 = 0;
+end
+
+% Check velocity value formats
+V = max( min( round(V), 10000 ), 30 );
+  
+% Display approx movement time
+if tro.verbose; fprintf(1,'Traverse movement will take approx %.1fs.\n',t1+t2); end;
 
 % Movement destination in points
 X = max( min( round( tro.resolution(:) .* p(:) ), 2^23-1 ), -2^23 );
@@ -51,7 +82,7 @@ cmd = sprintf('M %.0f,%.0f,%.0f,%.0f,%.0f,%.0f,0,30',[X.';V.']);
 prvBlockCmd( tro, cmd );
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

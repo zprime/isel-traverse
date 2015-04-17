@@ -5,15 +5,14 @@
 % OUTPUT:
 %  P - 3 element vector, containing the traverse position in mm.
 %
-% v0.1.0 2014-03-18
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 %
 % See also Traverse/MoveTo Traverse/Move
 function P = Position( tro )
-  assert( isconnected(tro), 'Traverse must be open to get the position.' );
-  assert( ~isempty( tro.resolution ), 'Traverse resolution has not been set' );
+  movevalid( tro );
   
   % Get the position as a string
   Pstr = prvImmCmd( tro, 'P' );
@@ -30,7 +29,7 @@ function P = Position( tro )
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

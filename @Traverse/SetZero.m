@@ -3,21 +3,22 @@
 % After running this command, the current position will be treated as a
 % virtual zero, and any absolute movements will be relative to this point.
 %
-% v0.1.0 2014-03-18
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 %
 % See also Traverse/Position Traverse/MoveTo
 function SetZero( tro )
   % Make sure the traverse is connected
-  assert( isconnected(tro), 'Traverse must be connected.' );
+  movevalid( tro );
   % Zet current point as zero for all 3 axes
   prvImmCmd( tro, 'n7' );
+  % TODO - Find out if interpolation settings reset after zero
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

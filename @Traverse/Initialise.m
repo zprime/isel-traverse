@@ -2,21 +2,30 @@
 %
 % Initialise( T )
 %
-% v0.1.1 2014-03-20
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 %
 % See also Traverse/ReturnToReference
 function Initialise( tro )
   % Make sure the traverse is connected
-  assert( isconnected(tro), 'Traverse must be connected.' );
-  % Return to reference, all three axes
+  movevalid( tro );
+  % Initialise for three axes
   prvBlockCmd( tro, '7' );
+  % Defaults back to 2D interpolation
+  try
+    tro.interp3D = true;
+  catch
+  end
+  % Assumption-traverse goes back into XY interpolation mode
+  if ~strcmpi( tro.interp2Daxes, 'xy' )
+    tro.interp2Daxes = 'XY';
+  end
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

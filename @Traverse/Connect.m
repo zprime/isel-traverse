@@ -11,9 +11,9 @@
 % 'baud' | Baud rate to connect at. If none specified, the code enumerates
 %        |  over valid baud rates.
 %
-% v0.1.1 2014-03-21
+% v0.2.0 2015-04-17
 %
-% Copyright (c) 2014, Zebb Prime and The University of Adelaide
+% Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
 function Connect( tro, varargin )
 
@@ -72,27 +72,9 @@ for ii=1:numel(Ip)
     if regexpi( retst, 'isel' )
       if tro.verbose; fprintf(1,'isel controlled traverse found on %s at %i.\n',ports{Ip(ii)},bauds{Ib(ii)}); end;
       isvalid = true;
-      
-      % AWT Traverse? We can tell from the response
-      if regexp( retst, 'Interfacekarte' )
-        tro.resolution = [160 160 160];
-        tro.maxV = [25 25 25];
-        pause(3);
-        dump = char( fread(sp,sp.BytesAvailable).' );
-        fprintf( sp, '@07\n' );
-        assert( char(fread(sp,1))=='0', 'Failed to initialise traverse' );
-      elseif regexp( retst, 'iMC-S8' )
-        tro.resolution = [320 320 320];
-        tro.maxV = [25 25 25];
-        fprintf( sp, '@07\n' );
-        assert( char(fread(sp,1))=='0', 'Failed to initialise traverse' );
-      else
-        tro.resolution = [];
-        tro.maxV = [];
-      end
-      
       break;
     end
+    
   catch
     if tro.verbose; fprintf(1,'Failed with an error.\n'); end;
     if strcmpi( sp.Status, 'open' )
@@ -101,15 +83,20 @@ for ii=1:numel(Ip)
   end
 end
 
+%% If a valid connection was established, initialise traverse
+if isvalid
+    assert( exist('retst','var')~=0, 'Internal error: return string not available.' );
+    pause(3);
+    char( fread(sp,sp.BytesAvailable).' );
+    fprintf( sp, '@07\n' );
+    spBytesAvailableFcnCB( sp, [], tro );
+end
+
 %% If after all that, see if we have a valid connection
 if ~isvalid
   delete(sp);
   error('traverse:connect:UnableToConnect','Unable to connect to an isel controlled traverse.');
 end
-
-%% Put it into 3D interpolation mode
-fprintf( sp, '@0z1\n' );
-assert( char(fread(sp,1))=='0', 'Unable to set 3D interpolation mode');
 
 %% Set up the callback
 set( sp, 'BytesAvailableFcn', {@spBytesAvailableFcnCB,tro} );
@@ -117,45 +104,51 @@ set( sp, 'BytesAvailableFcn', {@spBytesAvailableFcnCB,tro} );
 %% Save serial object to traverse object
 tro.sp = sp;
 
+%% Try and put the traverse into 3D mode
+try
+  tro.interp3D = true;
+catch
+end
+
 end
 
 
 % Private callback function to read return value from the traverse
 function spBytesAvailableFcnCB( obj, ~, tro )
-  
-  % If there was a waiting dialog, close it
-  if ~isempty(tro.hg)
-    if ishandle( tro.hg )
-      delete(tro.hg);
-    end
-    tro.hg = [];
-  end
-  
-  % Set waiting to false, to resume operation (if paused)
-  tro.waiting = false;
-  
-  % Now lets look at the data to see what happened
-  st = char( fread( obj, 1 ) );
-  if tro.verbose; fprintf(1,'isel returned: %s\n',st); fprintf(1,'%i ',uint8(st)); fprintf(1,'\n'); end;
-  
-  % Expected only 1 character during normal operation
-  assert( numel(st) == 1, 'traverse:spBACB:UnknownString',...
-    'isel controller returned more than one character.');
-  
-  errmsg = prvErrorMessages( tro );
 
-  % Look up the return value in the error message table
-  I = strcmp( st, errmsg(:,1) );
-  assert( sum(I)==1, 'traverse:spBACB:TooManyMatches', ...
-    'Unknown error, or multiple error matches.');
-  
-  if errmsg{I,3}
-    fprintf(2,'%s\n',errmsg{I,2});
+% If there was a waiting dialog, close it
+if ~isempty(tro.hg)
+  if ishandle( tro.hg )
+    delete(tro.hg);
   end
+  tro.hg = [];
+end
+
+% Set waiting to false, to resume operation (if paused)
+tro.waiting = false;
+
+% Now lets look at the data to see what happened
+st = char( fread( obj, 1 ) );
+if tro.verbose; fprintf(1,'isel returned: %s\n',st); fprintf(1,'%i ',uint8(st)); fprintf(1,'\n'); end;
+
+% Expected only 1 character during normal operation
+assert( numel(st) == 1, 'traverse:spBACB:UnknownString',...
+  'isel controller returned more than one character.');
+
+errmsg = prvErrorMessages( tro );
+
+% Look up the return value in the error message table
+I = strcmp( st, errmsg(:,1) );
+assert( sum(I)==1, 'traverse:spBACB:TooManyMatches', ...
+  'Unknown error, or multiple error matches.');
+
+if errmsg{I,3}
+  fprintf(2,'%s\n',errmsg{I,2});
+end
 end
 
 %{
-Copyright (c) 2014, Zebb Prime and The University of Adelaide
+Copyright (c) 2014--2015, Zebb Prime
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
