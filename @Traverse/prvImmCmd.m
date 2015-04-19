@@ -1,6 +1,6 @@
 % Private function. Send a command expecting an immediate response
 %
-% v0.2.0 2015-04-17
+% v0.2.1 2015-04-20
 %
 % Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
@@ -28,12 +28,6 @@ I = strcmp( st, errmsg(:,1) );
 assert( sum(I)==1, 'traverse:spBACB:TooManyMatches', ...
   'Unknown error, or multiple error matches.');
 
-% Output the error message to the terminal if required (without throwing an
-% error)
-if errmsg{I,3}
-  fprintf(2,'%s\n',errmsg{I,2});
-end
-
 % Wait for the reply, which should be immediate
 str = [];
 if tro.sp.BytesAvailable > 0
@@ -43,6 +37,11 @@ if tro.verbose; fprintf( 1, 'Received status character %s, and string: ''%s''\n'
 
 %% Re-enable the callback (if it was present)
 set( tro.sp, 'BytesAvailableFcn', cbf );
+
+% Now throw an error message
+if errmsg{I,3}
+  error( 'Traverse:prvImmCmd:ErrByte','Traverse error: %s\n',errmsg{I,2} );
+end
 
 end
 
