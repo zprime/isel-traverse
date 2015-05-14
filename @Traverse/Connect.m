@@ -11,7 +11,7 @@
 % 'baud' | Baud rate to connect at. If none specified, the code enumerates
 %        |  over valid baud rates.
 %
-% v0.2.0 2015-04-17
+% v0.2.1 2015-05-14
 %
 % Copyright (c) 2014--2015, Zebb Prime
 % Licence appended to source
@@ -87,7 +87,9 @@ end
 if isvalid
     assert( exist('retst','var')~=0, 'Internal error: return string not available.' );
     pause(3);
-    char( fread(sp,sp.BytesAvailable).' );
+    if sp.BytesAvailable
+      char( fread(sp,sp.BytesAvailable).' );
+    end
     fprintf( sp, '@07\n' );
     spBytesAvailableFcnCB( sp, [], tro );
 end
